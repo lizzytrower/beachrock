@@ -1,0 +1,194 @@
+---
+title: "Beachrock experiment 16S data analysis"
+author: Lizzy Trower
+format: html
+embed-resources: true
+editor: visual
+theme: flatly
+toc: true
+---
+
+## Setup
+
+Load libraries:
+
+```{r load_libraries}
+library(tidyverse)
+library(rcartocolor)
+library(qiime2R)
+library(vegan)
+library(ape)
+library(gridExtra)
+library(grid)
+library(usedist)
+library(LaCroixColoR)
+```
+
+Load data from .csv files:
+
+```{r load_csv_tables}
+alldata_lev2 <- read.csv('level-2_alldata_v2.csv')
+cyanos_lev4 <- read.csv('level-4_cyanos_v2.csv')
+```
+
+Load data from .qza files:
+
+```{r load_qza_tables}
+bc_distance <- read_qza('bray_curtis_distance_matrix.qza')
+```
+
+## Bar plots
+
+### All data at the phylum level
+
+```{r all_data_phylum}
+#set order of sample IDs
+alldata_lev2$sample_ID <- factor(alldata_lev2$sample_ID,
+                                levels = c('LAC23-209',
+                                           'LAC23-210',
+                                           'LAC23-509',
+                                           'LAC23-510',
+                                           'LAC23-709',
+                                           'LAC23-710',
+                                           'LAC23-507',
+                                           'LAC23-508'),
+                                ordered = TRUE)
+#need to reshape the data first
+alldata_lev2 %>%
+  pivot_longer(
+    cols = c(4:16),
+    names_to = 'taxa',
+    values_to = 'abundance'
+  ) %>%
+  #now plot
+  ggplot(
+    aes(
+      fill=taxa,
+        x=abundance,
+        y=sample_ID)
+  ) +
+  geom_bar(
+    position='fill',
+    stat='identity'
+    ) +
+  theme_light() +
+  
+  scale_fill_manual(
+    values = lacroix_palette(
+      "PassionFruit", 
+      n = 13, 
+      type = "continuous"))
+
+ggsave('alldata_lev2.pdf',height = 6,width = 12)
+ggsave('alldata_lev2.png',height = 6,width = 12)
+```
+
+### Cyanobacteria - orders
+
+```{r cyanos_order}
+#set order of sample IDs
+cyanos_lev4$sample_ID <- factor(cyanos_lev4$sample_ID,
+                                levels = c('LAC23-209','LAC23-210',
+                                           'LAC23-509',
+                                  'LAC23-510','LAC23-709','LAC23-710',
+                                  'LAC23-507','LAC23-508'),
+                                ordered = TRUE)
+
+#need to reshape the data first
+cyanos_lev4 %>%
+  pivot_longer(
+    cols = c(4:14),
+    names_to = 'taxa',
+    values_to = 'abundance'
+  ) %>%
+  #now plot
+  ggplot(
+    aes(
+      fill=taxa,
+        x=abundance,
+        y=sample_ID)
+  ) +
+  geom_bar(
+    position='fill',
+    stat='identity'
+    ) +
+  theme_light() +
+  scale_fill_carto_d(palette='ag_GrnYl') 
+
+ggsave('cyanos_lev4.pdf',height = 6,width = 12)
+ggsave('cyanos_lev4.png',height = 6,width = 12)
+```
+
+## NMDS plot
+
+```{r filter_and_pcoa}
+#subset the distance matrix to only include the samples of interest
+dist_filt <- dist_subset(bc_distance$data,c('G1051',
+                                            'G1081',
+                                            'G1241',
+                                            'G221',
+                                            'G351',
+                                            'G771',
+                                            'G861',
+                                            'G871'))
+#run pcoa and generate output plot
+pcoa <- pcoa(dist_filt)
+biplot.pcoa(pcoa)
+```
+
+```{r NMDS_anlysis}
+set.seed(2)
+ord <- metaMDS(dist_filt, k = 2, trymax = 100, trace = FALSE)
+ord
+```
+
+```{r make_NMDS_plot}
+nmds_plotdata <- as.data.frame(ord$points)
+nmds_plottable <- rownames_to_column(nmds_plotdata,var='index')
+nmds_plottable$SampleID <- c('LAC23-508',
+                             'LAC23-210',
+                             'LAC23-507',
+                             'LAC23-510',
+                             'LAC23-509',
+                             'LAC23-209',
+                             'LAC23-710',
+                             'LAC23-709')
+nmds_plottable$SampleType <- c('in situ',
+                             'February',
+                             'in situ',
+                             'May',
+                             'May',
+                             'February',
+                             'July',
+                             'July')
+
+#set order of sample IDs
+nmds_plottable$SampleType <- factor(nmds_plottable$SampleType,
+                                levels = c('February',
+                                           'May',
+                                           'July',
+                                           'in situ'),
+                                ordered = TRUE)
+
+ggplot(nmds_plottable,
+       aes(
+         x = MDS1,
+         y = MDS2,
+         label = SampleID,
+         color = SampleType)
+       )+
+  geom_point() +
+  geom_text(
+    hjust=0, 
+    vjust=0)+
+  theme_light() +
+  scale_color_manual(
+    values=lacroix_palette(
+      "PassionFruit", 
+      type = "discrete")) +
+  coord_cartesian(
+    xlim=c(-0.6,0.6)) +
+  annotate(geom = 'text',x = -0.5,y=0.3,label = 'Stress = 0.0472')
+
+ggsave('NMDSplot.pdf')
+```
