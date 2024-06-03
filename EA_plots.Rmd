@@ -1,0 +1,108 @@
+---
+title: "Plotting EA data"
+author: "Brianna Hibner"
+date: "2024-04-23"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+This file uploads data produced by the EA in the CUBES lab at CU Boulder (We acknowledge the analytical contributions of the CU Boulder Earth Systems Stable Isotope Lab (CUBES-SIL) Core Facility (RRID:SCR_019300)).
+
+
+Data is filtered to just include samples from the ooid sand itself, ggplot boxplot function is used for both TOC and d13C. Further plot beautification occurred in adobe illustrator (position of legend, and combining plots)
+
+#Loading packages
+```{r packages}
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(openxlsx)
+library(LaCroixColoR)
+```
+
+## Opening data
+```{r data}
+#loading the xcel sheet (found in the 'data' folder)
+Ooid_dat <- readxl::read_xlsx("data/Combined_clean_dat.xlsx", 
+    #skipping first 3 line 
+    skip=3 ) 
+  # needed assistance for reading type of data
+    col_types = c("text", "text","text","text","text", "numeric", "numeric", "numeric","numeric","numeric") 
+```
+
+##Plot of TOC data
+```{r TOC plot}
+#filtering for just the ooid sand data
+Ooid_dat|>
+  #using just the ooid data 
+  filter(`TOC sample type`== 'ooid') |>
+  #making min and max error bars for TOC
+  mutate(`%Cmin` = `%C` - 0.008)|>
+  mutate(`%Cmax`= `%C` + 0.008) |>
+  
+#plotting
+ggplot()+
+  aes(x=`Retrieval date`, y=`%C`) + 
+  
+#error bars for TOC
+  geom_errorbar(aes(ymin=`%Cmin`, ymax=`%Cmax`), color = 'lightgrey', width=0.20)+
+  
+    #boxplot base
+  geom_boxplot()+
+  
+  #adding dots of sample color
+  geom_point(aes(color = `bean bag sample`), size =2)+
+  #color pallette 
+   scale_color_manual(
+    values=lacroix_palette("PassionFruit",
+                           n = 11, 
+                           type = "continuous"))+
+
+  #reorganzing order of recovery date
+  scale_x_discrete(limits = c("control", "1 week", "3 months", "6 months"))+
+  
+  #clean looking plot
+  theme_light()
+
+
+```
+
+
+```{r d13C plots}
+Ooid_dat|>
+  #using just the ooid data 
+  filter(`TOC sample type`== 'ooid') |>
+    #making min and max error bars
+  mutate(`d13Cmin` = `d13C` - 0.265)|>
+  mutate(`d13Cmax`= `d13C` + 0.265) |>
+  
+#plotting
+ggplot()+
+  aes(x=`Retrieval date`, y=`d13C`) + 
+  #error bars
+  geom_errorbar(aes(ymin=`d13Cmin`, ymax=`d13Cmax`), color = 'lightgrey', width=0.20)+
+  
+  #boxplot base
+  geom_boxplot()+
+  #adding dots of sample color
+  geom_point(aes(color = `bean bag sample`), size =2)+
+    #color pallette
+   scale_color_manual(
+    values=lacroix_palette("PassionFruit", n = 11, type = "continuous")
+    )+
+  
+ #reorganzing order of recovery date
+  scale_x_discrete(limits = c("control", "1 week", "3 months", "6 months"))+
+  
+  #gen theme
+  theme_light() 
+
+```
+
+
