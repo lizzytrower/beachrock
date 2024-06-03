@@ -1,0 +1,123 @@
+---
+title: "Raman data plots"
+author: Lizzy Trower
+format: html
+embed-resources: true
+editor: visual
+theme: flatly
+toc: true
+---
+
+## About
+
+This code loads in and plots the Raman microspectroscopy data collected on sample CP13C.
+
+## Load libraries
+
+The LaCroixColoR package can be found at: <https://github.com/johannesbjork/LaCroixColoR>
+
+Alternatively, the code can be modified to use another palette.
+
+```{r load-libraries}
+library(tidyverse)
+library(LaCroixColoR)
+```
+
+## Load data
+
+This code chunk loads the data from text files.
+
+```{r load-data}
+#load ROI-1 data
+ROI1_01 <- read.table('CP13C_ROI1_1_2 s_785 nm_600 gr_mm_x50_01.txt')
+ROI1_02 <- read.table('CP13C_ROI1_1_3 s_785 nm_600 gr_mm_x50_02.txt')
+ROI1_03 <- read.table('CP13C_ROI1_1_3 s_785 nm_600 gr_mm_x50_03.txt')
+ROI1_04 <- read.table('CP13C_ROI1_1_3 s_785 nm_600 gr_mm_x50_04.txt')
+ROI1_05 <- read.table('CP13C_ROI1_1_3 s_785 nm_600 gr_mm_x50_05.txt')
+
+#load ROI-2 data
+ROI2_01 <- read.table('CP13C_ROI2_1_3 s_785 nm_600 gr_mm_x50_01.txt')
+ROI2_02 <- read.table('CP13C_ROI2_1_3 s_785 nm_600 gr_mm_x50_02.txt')
+ROI2_03 <- read.table('CP13C_ROI2_1_3 s_785 nm_600 gr_mm_x50_03.txt')
+ROI2_04 <- read.table('CP13C_ROI2_1_3 s_785 nm_600 gr_mm_x50_04.txt')
+
+#load ROI-3 data
+ROI3_01 <- read.table('CP13C_ROI3_1_3 s_785 nm_600 gr_mm_x50_01.txt')
+ROI3_02 <- read.table('CP13C_ROI3_2_3 s_785 nm_600 gr_mm_x50_02.txt')
+ROI3_03 <- read.table('CP13C_ROI3_1_3 s_785 nm_600 gr_mm_x50_03.txt')
+ROI3_04 <- read.table('CP13C_ROI3_1_3 s_785 nm_600 gr_mm_x50_04.txt')
+ROI3_05 <- read.table('CP13C_ROI3_1_3 s_785 nm_600 gr_mm_x50_05.txt')
+
+#load ROI-4 data
+ROI4_01 <- read.table('CP13C_ROI4_1_3 s_785 nm_600 gr_mm_x50_01.txt')
+ROI4_02 <- read.table('CP13C_ROI4_1_3 s_785 nm_600 gr_mm_x50_02.txt')
+
+#load ROI-5 data
+ROI5_01 <- read.table('CP13C_ROI5_2_3 s_785 nm_600 gr_mm_x50_01.txt')
+```
+
+## Data housekeeping
+
+This code chunk adds some extra columns to keep track of which ROI and analysis each dataset corresponds to so they can be combined into a single dataframe for plotting.
+
+```{r data-housekeeping}
+ROI1_01$analysis <- rep(1,length(ROI1_01$V1))
+ROI1_02$analysis <- rep(2,length(ROI1_02$V1))
+ROI1_03$analysis <- rep(3,length(ROI1_03$V1))
+ROI1_04$analysis <- rep(4,length(ROI1_04$V1))
+ROI1_05$analysis <- rep(5,length(ROI1_05$V1))
+ROI1_all <- rbind(ROI1_01,ROI1_02,ROI1_03,ROI1_04,ROI1_05)
+
+ROI2_01$analysis <- rep(1,length(ROI2_01$V1))
+ROI2_02$analysis <- rep(2,length(ROI2_02$V1))
+ROI2_03$analysis <- rep(3,length(ROI2_03$V1))
+ROI2_04$analysis <- rep(4,length(ROI2_04$V1))
+ROI2_all <- rbind(ROI2_01,ROI2_02,ROI2_03,ROI2_04)
+
+ROI3_01$analysis <- rep(1,length(ROI3_01$V1))
+ROI3_02$analysis <- rep(2,length(ROI3_02$V1))
+ROI3_03$analysis <- rep(3,length(ROI3_03$V1))
+ROI3_04$analysis <- rep(4,length(ROI3_04$V1))
+ROI3_05$analysis <- rep(5,length(ROI3_05$V1))
+ROI3_all <- rbind(ROI3_01,ROI3_02,ROI3_03,ROI3_04,ROI3_05)
+
+ROI4_01$analysis <- rep(1,length(ROI4_01$V1))
+ROI4_02$analysis <- rep(2,length(ROI4_02$V1))
+ROI4_all <- rbind(ROI4_01,ROI4_02)
+
+ROI5_01$analysis <- rep(1,length(ROI5_01$V1))
+
+ROI1_all$ROI <- rep(1,length(ROI1_all$V1))
+ROI2_all$ROI <- rep(2,length(ROI2_all$V1))
+ROI3_all$ROI <- rep(3,length(ROI3_all$V1))
+ROI4_all$ROI <- rep(4,length(ROI4_all$V1))
+ROI5_01$ROI <- rep(5,length(ROI5_01$V1))
+
+alldata <- rbind(ROI1_all,ROI2_all,ROI3_all,ROI4_all,ROI5_01)
+```
+
+## Plot data
+
+This code chunk plots all the data, with one subplot for each ROI. We add a dark gray dashed line to indicate the location of the aragonite L peak and a light gray dashed line to indicate the location of the calcite L peak.
+
+```{r all-data-plot}
+ROI.labs <- c('ROI 1','ROI 2','ROI 3','ROI 4','ROI 5')
+names(ROI.labs) <- c('1','2','3','4','5')
+
+ggplot(data = alldata, mapping = aes(x=V1,y=V2,color=factor(analysis))) +
+  geom_vline(xintercept=206,color = 'darkgray',linetype = 'dashed') +
+  geom_vline(xintercept=281,color = 'lightgray',linetype = 'dashed') +
+  geom_line(show.legend = FALSE) + 
+  facet_wrap(~ROI,
+             labeller=labeller(ROI=ROI.labs)) +
+  scale_color_manual(
+    values=lacroix_palette(
+      "PassionFruit", 
+      type = "discrete")) +
+  theme_light() +
+  labs(y='Raman intensity',
+       x=bquote('wavenumber (cm'^{-1}*')'))
+
+ggsave('Ramanplot.pdf')
+ggsave('Ramanplot.png')
+```
