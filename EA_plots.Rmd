@@ -34,14 +34,30 @@ Ooid_dat <- readxl::read_xlsx("data/Combined_clean_dat.xlsx",
     skip=3 ) 
   # needed assistance for reading type of data
     col_types = c("text", "text","text","text","text", "numeric", "numeric", "numeric","numeric","numeric") 
+    
+
+```
+
+```{r}
+unrinsed_dat <- Ooid_dat |>
+   #just ooid data
+   filter(`TOC sample type`== 'ooid') |>
+  #avoiding rinsed data
+  filter(`extraction loca`== 'nut bag')
+  
+unrinsed_dat |>  
+  filter(`Retrieval date`=='6 months')
+
 ```
 
 ##Plot of TOC data
 ```{r TOC plot}
 #filtering for just the ooid sand data
 Ooid_dat|>
-  #using just the ooid data 
-  filter(`TOC sample type`== 'ooid') |>
+  #just ooid data
+   filter(`TOC sample type`== 'ooid') |>
+  #avoiding rinsed data
+  filter(`extraction loca`== 'nut bag') |>
   #making min and max error bars for TOC
   mutate(`%Cmin` = `%C` - 0.008)|>
   mutate(`%Cmax`= `%C` + 0.008) |>
@@ -58,12 +74,15 @@ ggplot()+
   
   #adding dots of sample color
   geom_point(aes(color = `bean bag sample`), size =2)+
+  
+ 
   #color pallette 
    scale_color_manual(
     values=lacroix_palette("PassionFruit",
-                           n = 11, 
+                           n = 6, 
                            type = "continuous"))+
 
+      
   #reorganzing order of recovery date
   scale_x_discrete(limits = c("control", "1 week", "3 months", "6 months"))+
   
@@ -78,6 +97,8 @@ ggplot()+
 Ooid_dat|>
   #using just the ooid data 
   filter(`TOC sample type`== 'ooid') |>
+    #avoiding rinsed data
+  filter(`extraction loca`== 'nut bag') |>
     #making min and max error bars
   mutate(`d13Cmin` = `d13C` - 0.265)|>
   mutate(`d13Cmax`= `d13C` + 0.265) |>
@@ -94,8 +115,9 @@ ggplot()+
   geom_point(aes(color = `bean bag sample`), size =2)+
     #color pallette
    scale_color_manual(
-    values=lacroix_palette("PassionFruit", n = 11, type = "continuous")
-    )+
+    values=lacroix_palette("PassionFruit",   n = 6, 
+                           type = "continuous"))+
+
   
  #reorganzing order of recovery date
   scale_x_discrete(limits = c("control", "1 week", "3 months", "6 months"))+
